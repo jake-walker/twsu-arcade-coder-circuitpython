@@ -1,0 +1,40 @@
+name: Build Micropython
+on:
+  pull_request:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y apt-utils bison build-essential bzip2 ca-certificates ccache cmake check curl flex git git-lfs gperf lcov libbsd-dev libffi-dev libglib2.0-0 libncurses-dev libpixman-1-0 libsdl2-2.0-0 libslirp0 libusb-1.0-0-dev make ninja-build python3 python3-venv python-is-python3 ruby unzip wget xz-utils zip
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Checkout submodules
+        working-directory: ./circuitpython/ports/espressif
+        run: |
+          make fetch-port-submodules
+      - name: Setup ESP-IDF
+        working-directory: ./circuitpython/ports/espressif/esp-idf
+        run: |
+          ./install.sh
+          source export.sh
+          python3 -m pip install -r ../../../requirements-dev.txt
+      - name: Build firmware
+        working-directory: ./circuitpython/ports/espressif
+        run: |
+          source ./esp-idf/export.sh
+          ln -sfn $GITHUB_WORKSPACE/twsu_arcade_coder ./boards/.
+          make BOARD=twsu_arcade_coder -j8
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware
+          path: ./circuitpython/ports/espressif/build-twsu_arcade_coder/firmware.bin
