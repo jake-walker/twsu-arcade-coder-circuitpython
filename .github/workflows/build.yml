@@ -17,10 +17,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: true
+          fetch-depth: 1
       - name: Checkout submodules
         working-directory: ./circuitpython/ports/espressif
         run: |
           make fetch-port-submodules
+          cd ../../
+          make fetch-tags
       - name: Setup ESP-IDF
         working-directory: ./circuitpython/ports/espressif/esp-idf
         run: |
